@@ -158,12 +158,9 @@ export default {
       } else {
         this.n = this.n + 1
       }
-      console.log(this.numero_champs_texte)
       for (var w = 0; w < this.numero_champs_texte.length; w++) {
         this.numero_champs_texte[w] = ' '
       }
-      console.log(this.numero_champs_texte)
-      console.log(this.n)
     },
 
     conditionValidation () {
