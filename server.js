@@ -19,12 +19,15 @@ app.use(session({
   saveUninitialized: true,
   cookie: { secure: false } // ne changez que si vous avez activé le https
 }))
+
 app.use(morgan('dev'))
 app.use(bodyParser.json())
 app.use(cors({
   credentials: true,
   origin: 'http://localhost:8080'
 }))
+
+var connected = false
 
 const users = [{
   username: 'admin',
@@ -64,12 +67,13 @@ app.get('/api/test', (req, res) => {
 app.post('/api/login', (req, res) => {
   console.log('req.body', req.body)
   console.log('req.query', req.query)
-  if (!req.session.userId) {
-    const user = users.find(u => u.username === req.body.username && u.password === req.body.password)
+  if (!req.session.userId && connected === false) {
+    const user = users.find(u => u.username === req.body.login && u.password === req.body.password)
     if (!user) {
       // gérez le cas où on n'a pas trouvé d'utilisateur correspondant
     } else {
       // connect the user
+      connected = true
       req.session.userId = 1000 // connect the user, and change the id
       res.json({
         message: 'connected'
@@ -84,13 +88,14 @@ app.post('/api/login', (req, res) => {
 })
 
 app.get('/api/logout', (req, res) => {
-  if (!req.session.userId) {
+  if (!req.session.userId && connected === false) {
     res.status(401)
     res.json({
       message: 'you are already disconnected'
     })
   } else {
     req.session.userId = 0
+    connected = false
     res.json({
       message: 'you are now disconnected'
     })
