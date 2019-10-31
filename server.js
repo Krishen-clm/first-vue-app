@@ -27,6 +27,9 @@ app.use(cors({
   origin: 'http://localhost:8080'
 }))
 
+const path = require('path')
+app.use(express.static(path.join(__dirname, 'dist/')))
+
 var connected = false
 
 const users = [{

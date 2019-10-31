@@ -19,7 +19,7 @@
         </v-card>
       </v-col>
     </v-row>
-    <v-text-field @keyup.enter="conditionValidation" v-bind:background-color="couleur" label="Entrez votre réponse" v-model="lettre"></v-text-field>
+    <v-text-field v-on:click="couleurReset" v-on:keyup.enter="conditionValidation" v-bind:background-color="couleur" label="Entrez votre réponse" v-model="lettre"></v-text-field>
     <p>Entrez 1 seul charactère</p>
     <p> Lettres déjà utilisées : {{lettreEntree}}</p>
     <v-btn block rounded x-large v-on:click="conditionValidation" class="center">Valider</v-btn>
@@ -29,6 +29,7 @@
       <v-btn v-on:click="seDeconnecter">Déconnexion</v-btn>
       <h1>VOUS AVEZ PERDU </h1>
       <v-btn v-on:click="reessayer">Essayer de nouveau</v-btn>
+      <v-img v-bind:src="penduImage[12]" max-width="400"></v-img>
     </div>
     <div v-show="gagner">
       <h1>Vous Avez Gagné </h1>
@@ -166,24 +167,53 @@ export default {
     },
 
     conditionValidation () {
-      this.lettreEntree = this.lettreEntree + this.lettre.toLowerCase() + ' '
-      if (this.lettre.length !== 1) {
-        console.log(this.numero_champs_texte[2])
-        this.couleur = 'red'
-      } else if (this.words[this.n].mot.indexOf(this.lettre.toLowerCase()) === -1) {
-        this.couleur = ''
-        this.faute++
-        this.fauteQ++
-        if (this.fauteQ === 3) {
-          this.indice = true
-        }
-        if (this.fauteQ === 12) {
-          this.pendu = false
-          this.perdu = true
-          this.faute = 0
-          this.fauteQ = 0
-          this.n = 0
-          this.lettreEntree = ''
+      if (this.lettreEntree.indexOf(this.lettre.toLowerCase()) === -1) {
+        if (this.lettre.length !== 1) {
+          this.couleur = 'red'
+          return ''
+        } else if (this.words[this.n].mot.indexOf(this.lettre.toLowerCase()) === -1) {
+          this.lettreEntree = this.lettreEntree + this.lettre.toLowerCase() + ' '
+          this.couleur = ''
+          this.faute++
+          this.fauteQ++
+          if (this.fauteQ === 3) {
+            this.indice = true
+          }
+          if (this.fauteQ === 12) {
+            this.pendu = false
+            this.perdu = true
+            this.faute = 0
+            this.fauteQ = 0
+            this.n = 0
+            this.lettreEntree = ''
+          }
+          if (this.n + 1 === this.words.length) {
+            this.pendu = false
+            this.gagner = true
+            this.faute = 0
+            this.fauteQ = 0
+            this.n = 0
+            this.lettreEntree = ''
+          }
+        } else {
+          this.lettreEntree = this.lettreEntree + this.lettre.toLowerCase() + ' '
+          const occurence = this.words[this.n].mot.split(this.lettre)
+          this.success = this.success + occurence.length - 1
+          for (var l = 0; l < this.words[this.n].mot.length; l++) {
+            if (this.words[this.n].mot[l] === this.lettre.toLowerCase()) {
+              this.numero_champs_texte[l] = this.lettre.toLowerCase()
+            }
+          }
+          if (this.success === this.words[this.n].mot.length) {
+            this.success = 0
+            this.fauteQ = 0
+            this.indice = false
+            for (var m = 0; m < this.words[this.n].mot.length; m++) {
+              this.numero_champs_texte[m] = '?'
+            }
+            this.lettreEntree = ''
+            this.n++
+          }
         }
         if (this.n + 1 === this.words.length) {
           this.pendu = false
@@ -193,37 +223,12 @@ export default {
           this.n = 0
           this.lettreEntree = ''
         }
-      } else {
-        console.log(this.words[this.n].mot.indexOf(this.lettre.toLowerCase()))
-        this.success = this.success + this.words[this.n].mot.indexOf(this.lettre.toLowerCase())
-        for (var l = 0; l < this.words[this.n].mot.length; l++) {
-          if (this.words[this.n].mot[l] === this.lettre.toLowerCase()) {
-            this.numero_champs_texte[l] = this.lettre.toLowerCase()
-          }
-        }
-        if (this.success === this.words[this.n].mot.length) {
-          this.success = 0
-          this.fauteQ = 0
-          this.indice = false
-          for (var m = 0; m < this.words[this.n].mot.length; m++) {
-            this.numero_champs_texte[m] = '?'
-          }
-          this.lettreEntree = ''
-          this.n++
-        }
+        this.lettre = ''
+        this.lettreEntree = this.lettreEntree + this.lettre.toLowerCase() + ' '
       }
-      if (this.n + 1 === this.words.length) {
-        this.pendu = false
-        this.gagner = true
-        this.faute = 0
-        this.fauteQ = 0
-        this.n = 0
-        this.lettreEntree = ''
-      }
-      this.lettre = ''
     },
     async sInscrire () {
-      const rep = await this.axios.post('http://localhost:4000/api/addLog', {
+      const rep = await this.axios.post('/api/addLog', {
         login: this.identifiant,
         password: this.password
       })
@@ -239,7 +244,7 @@ export default {
     },
 
     async seConnecter () {
-      const rep = await this.axios.post('http://localhost:4000/api/login', {
+      const rep = await this.axios.post('/api/login', {
         login: this.identifiant,
         password: this.password
       })
@@ -254,7 +259,7 @@ export default {
     },
 
     async seDeconnecter () {
-      await this.axios.get('http://localhost:4000/api/logout', {
+      await this.axios.get('/api/logout', {
       })
       this.pendu = false
       this.success = 0
@@ -272,6 +277,11 @@ export default {
       this.perdu = false
       this.pendu = true
       this.indice = false
+    },
+
+    couleurReset () {
+      this.couleur = ''
+      this.lettre = ''
     }
   }
 }
